@@ -31,6 +31,9 @@
       "@preload/*": [
         "preload/*"
       ],
+      "@config/*": [
+        "config/*"
+      ],
       "@/*": [
         "./*"
       ]
@@ -40,6 +43,7 @@
     "main/**/*",
     "preload/**/*",
     "renderer/**/*",
+    "config/**/*",
     "electron.vite.config.ts"
   ],
   "exclude": [

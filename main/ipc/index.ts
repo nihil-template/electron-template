@@ -1,3 +1,5 @@
+import { ipcGetPosts, ipcGetUser } from '../api';
+
 import { ipcGetPing } from './ipcGetPing';
 
 /**
@@ -10,4 +12,8 @@ import { ipcGetPing } from './ipcGetPing';
  */
 export function setupIpcHandlers() {
   ipcGetPing();
+
+  // API 관련 IPC 핸들러
+  ipcGetUser();
+  ipcGetPosts();
 }

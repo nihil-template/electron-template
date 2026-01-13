@@ -8,6 +8,25 @@ contextBridge.exposeInMainWorld('electron', {
    * @returns Promise<string> 'pong' 문자열을 반환합니다.
    */
   ping: () => ipcRenderer.invoke('ping'),
+
+  /**
+   * API 요청 함수들
+   * 개발/운영 환경 모두 Main Process를 통해 요청합니다.
+   * Main Process에서 요청/응답 로그를 출력합니다.
+   */
+  api: {
+    /**
+     * 사용자 조회
+     * @param userId 사용자 ID
+     * @returns 사용자 데이터
+     */
+    getUser: (userId: string) => ipcRenderer.invoke('api:get-user', userId),
+    /**
+     * Posts 목록 조회
+     * @returns Posts 목록 데이터
+     */
+    getPosts: () => ipcRenderer.invoke('api:get-posts'),
+  },
 });
 
 // Preload 스크립트가 로드되었는지 확인하기 위한 로그
