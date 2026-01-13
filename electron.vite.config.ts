@@ -1,11 +1,20 @@
 import { resolve } from 'path';
 
+import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'electron-vite';
 import type { UserConfig } from 'electron-vite';
 
 export default defineConfig({
   main: {
+    resolve: {
+      alias: {
+        '~': resolve(__dirname, 'renderer'),
+        '@main': resolve(__dirname, 'main'),
+        '@preload': resolve(__dirname, 'preload'),
+        '@': resolve(__dirname),
+      },
+    },
     build: {
       externalizeDeps: true,
       rollupOptions: {
@@ -18,6 +27,14 @@ export default defineConfig({
     },
   } as UserConfig['main'],
   preload: {
+    resolve: {
+      alias: {
+        '~': resolve(__dirname, 'renderer'),
+        '@main': resolve(__dirname, 'main'),
+        '@preload': resolve(__dirname, 'preload'),
+        '@': resolve(__dirname),
+      },
+    },
     build: {
       externalizeDeps: true,
       rollupOptions: {
@@ -31,6 +48,21 @@ export default defineConfig({
   } as UserConfig['preload'],
   renderer: {
     root: 'renderer',
-    plugins: [ vue(), ],
-  },
+    plugins: [ vue(), tailwindcss(), ],
+    resolve: {
+      alias: {
+        '~': resolve(__dirname, 'renderer'),
+        '@main': resolve(__dirname, 'main'),
+        '@preload': resolve(__dirname, 'preload'),
+        '@': resolve(__dirname),
+      },
+    },
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve(__dirname, 'renderer/index.html'),
+        },
+      },
+    },
+  } as UserConfig['renderer'],
 });
