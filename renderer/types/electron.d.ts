@@ -13,10 +13,15 @@ export interface Post {
  */
 interface ElectronAPI {
   /**
-   * ping을 보내고 pong 응답을 받습니다.
-   * @returns Promise<string> 'pong' 문자열을 반환합니다.
+   * IPC 통신 함수들
    */
-  ping: () => Promise<string>;
+  ipc: {
+    /**
+     * ping을 보내고 pong 응답을 받습니다.
+     * @returns Promise<string> 'pong' 문자열을 반환합니다.
+     */
+    ping: () => Promise<string>;
+  };
 
   /**
    * API 요청 함수들

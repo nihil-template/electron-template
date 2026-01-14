@@ -1,44 +1,22 @@
-import { join } from 'path';
-
-import { app, BrowserWindow } from 'electron';
+import { app } from 'electron';
 
 import { setupIpcHandlers } from './ipc';
-
-function createWindow() {
-  const mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-  });
-
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.openDevTools();
-  }
-  else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
-  }
-}
+import {
+  createMainWindow,
+  handleAppActivate,
+  handleWindowAllClosed
+} from './window/mainWindow';
 
 app.whenReady().then(() => {
   // IPC 핸들러 등록
   setupIpcHandlers();
 
-  createWindow();
+  // 메인 윈도우 생성
+  createMainWindow();
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
+  // 앱 활성화 이벤트 핸들러
+  app.on('activate', handleAppActivate);
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
+// 모든 윈도우가 닫혔을 때의 이벤트 핸들러
+app.on('window-all-closed', handleWindowAllClosed);

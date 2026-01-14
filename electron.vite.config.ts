@@ -51,6 +51,9 @@ export default defineConfig({
   renderer: {
     root: 'renderer',
     plugins: [ vue(), tailwindcss(), ],
+    server: {
+      port: 3000,
+    },
     resolve: {
       alias: {
         '~': resolve(__dirname, 'renderer'),
