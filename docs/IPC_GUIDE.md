@@ -44,27 +44,41 @@ Electron은 **Main Process**(Node.js 환경)와 **Renderer Process**(브라우�
 - **Renderer Process**: UI 렌더링 (Vue, React 등)
 - **Preload Script**: 보안을 위해 두 프로세스 간의 안전한 브릿지 역할
 
+### IPC vs API 구분 원칙
+
+| 구분 | 사용처 | 예시 |
+|------|--------|------|
+| **API (HTTP)** | 서버·엔드포인트와의 통신 | Hono `GET /health`, `GET /users` → `fetch(baseUrl + '/경로')`, `honoClient` |
+| **IPC** | 설정·구성 조회, 엔드포인트 호출이 아닌 앱 단 통신 | base URL 조회, ping, 파일/설정 접근 |
+
+- **API 엔드포인트 소통 = API(HTTP)**. 렌더러에서 Hono·외부 서버 엔드포인트를 호출할 때는 반드시 `fetch` 등 HTTP로 요청한다.
+- **그 외(설정, 앱 내 통신) = IPC**. base URL 같은 설정 조회는 IPC로 해도 된다.
+
 ---
 
 ## 프로젝트 구조
 
 ```
 electron-template/
-├── main/                    # Main Process
-│   ├── index.ts            # 앱 진입점
-│   └── ipc/                # IPC 핸들러 모음
-│       ├── index.ts        # IPC 핸들러 등록 (통합 파일)
-│       ├── ipcGetPing.ts   # ping IPC 핸들러 (예시)
-│       └── ipc<행위><대상>.ts  # 각 IPC 통신별 파일
-├── preload/                # Preload Script
-│   └── index.ts           # contextBridge로 API 노출
-├── renderer/               # Renderer Process
-│   ├── types/
-│   │   └── electron.d.ts  # Electron API 타입 정의
-│   └── App.vue            # Vue 컴포넌트
+├── src/main/                    # Main Process
+│   ├── index.ts            # 앱 진입점 (IPC·Hono 서버·DB context·윈도우)
+│   ├── ipc/                 # IPC 핸들러
+│   │   ├── index.ts        # 핸들러 등록
+│   │   ├── ipcGetPing.ts   # ping 예시
+│   │   └── ipcGetHonoBaseUrl.ts  # Hono base URL (렌더러에서 Hono API 호출 시 사용)
+│   ├── server/              # Hono HTTP 서버 (Controller → Service → DB)
+│   └── window/              # BrowserWindow
+├── src/preload/
+│   └── index.ts            # ipc(getHonoBaseUrl 등), api 노출
+├── src/renderer/
+│   ├── api/honoClient.ts   # Hono API 클라이언트 (getBaseUrl → fetch)
+│   ├── types/electron.d.ts
+│   └── ...
 └── docs/
-    └── IPC_GUIDE.md        # 이 문서
+    └── IPC_GUIDE.md
 ```
+
+**참고**: 렌더러에서 메인 프로세스의 Hono API(`http://localhost:3456` 등)를 호출할 때는 `window.electron.ipc.getHonoBaseUrl()`으로 base URL을 받은 뒤 `fetch(baseUrl + '/경로')`를 사용합니다. CORS는 Hono 앱에서 허용되어 있습니다.
 
 ---
 
@@ -118,7 +132,7 @@ electron-template/
 
 ### 1단계: Main Process에 핸들러 추가
 
-**파일 위치**: `main/ipc/ipc<행위><대상>.ts`
+**파일 위치**: `src/main/ipc/ipc<행위><대상>.ts`
 
 각 IPC 통신은 별도 파일로 분리하여 책임 소재를 명확하게 합니다.
 
@@ -126,7 +140,7 @@ electron-template/
 - 파일명: `ipc<행위><대상>.ts` (예: `ipcGetUser.ts`, `ipcPostData.ts`, `ipcDeleteFile.ts`, `ipcUpdateConfig.ts`)
 - 함수명: `ipc<행위><대상>()` (예: `ipcGetUser()`, `ipcPostData()`) - 파일명과 동일
 
-**예시** (`main/ipc/ipcGetUser.ts`):
+**예시** (`src/main/ipc/ipcGetUser.ts`):
 ```typescript
 import { ipcMain } from 'electron';
 
@@ -142,7 +156,7 @@ export function ipcGetUser() {
 }
 ```
 
-**예시** (`main/ipc/ipcPostFile.ts`):
+**예시** (`src/main/ipc/ipcPostFile.ts`):
 ```typescript
 import { ipcMain } from 'electron';
 import { writeFile } from 'fs/promises';
@@ -158,7 +172,7 @@ export function ipcPostFile() {
 }
 ```
 
-**예시** (`main/ipc/ipcDeleteFile.ts`):
+**예시** (`src/main/ipc/ipcDeleteFile.ts`):
 ```typescript
 import { ipcMain } from 'electron';
 import { unlink } from 'fs/promises';
@@ -179,7 +193,7 @@ export function ipcDeleteFile() {
 }
 ```
 
-**`main/ipc/index.ts`에서 통합 등록**:
+**`src/main/ipc/index.ts`에서 통합 등록**:
 ```typescript
 import { ipcGetUser } from './ipcGetUser';
 import { ipcPostFile } from './ipcPostFile';
@@ -195,7 +209,7 @@ export function setupIpcHandlers() {
 }
 ```
 
-**핸들러 등록 위치**: `main/index.ts`에서 `app.whenReady()` 내부에서 호출됩니다.
+**핸들러 등록 위치**: `src/main/index.ts`에서 `app.whenReady()` 내부에서 호출됩니다.
 
 ```typescript
 app.whenReady().then(() => {
@@ -206,7 +220,7 @@ app.whenReady().then(() => {
 
 ### 2단계: Preload Script에 API 노출
 
-**파일 위치**: `preload/index.ts`
+**파일 위치**: `src/preload/index.ts`
 
 `contextBridge.exposeInMainWorld()`를 사용하여 Renderer에서 사용할 수 있는 API를 노출합니다.
 
@@ -232,7 +246,7 @@ contextBridge.exposeInMainWorld('electron', {
 
 ### 3단계: TypeScript 타입 정의
 
-**파일 위치**: `renderer/types/electron.d.ts`
+**파일 위치**: `src/renderer/types/electron.d.ts`
 
 TypeScript에서 타입 안전성을 위해 API 타입을 정의합니다.
 
@@ -273,7 +287,7 @@ interface OperationResult {
 
 ### 4단계: Renderer에서 사용
 
-**Vue 컴포넌트 예시**: `renderer/App.vue` 또는 다른 Vue 컴포넌트
+**Vue 컴포넌트 예시**: `src/renderer/App.vue` 또는 다른 Vue 컴포넌트
 
 ```vue
 <script setup lang="ts">
@@ -340,7 +354,7 @@ const saveFile = async () => {
 
 ### 예시 1: 간단한 데이터 요청
 
-**Main Process** (`main/ipc/ipcGetAppVersion.ts`):
+**Main Process** (`src/main/ipc/ipcGetAppVersion.ts`):
 ```typescript
 import { ipcMain, app } from 'electron';
 
@@ -351,7 +365,7 @@ export function ipcGetAppVersion() {
 }
 ```
 
-**`main/ipc/index.ts`에 등록**:
+**`src/main/ipc/index.ts`에 등록**:
 ```typescript
 import { ipcGetAppVersion } from './ipcGetAppVersion';
 
@@ -360,14 +374,14 @@ export function setupIpcHandlers() {
 }
 ```
 
-**Preload** (`preload/index.ts`):
+**Preload** (`src/preload/index.ts`):
 ```typescript
 contextBridge.exposeInMainWorld('electron', {
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
 });
 ```
 
-**타입 정의** (`renderer/types/electron.d.ts`):
+**타입 정의** (`src/renderer/types/electron.d.ts`):
 ```typescript
 interface ElectronAPI {
   getAppVersion: () => Promise<string>;
@@ -382,7 +396,7 @@ console.log(`앱 버전: ${version}`);
 
 ### 예시 2: 파일 시스템 작업
 
-**Main Process** (`main/ipc/ipcGetConfig.ts`):
+**Main Process** (`src/main/ipc/ipcGetConfig.ts`):
 ```typescript
 import { ipcMain, app } from 'electron';
 import { readFile } from 'fs/promises';
@@ -397,7 +411,7 @@ export function ipcGetConfig() {
 }
 ```
 
-**Main Process** (`main/ipc/ipcPostConfig.ts`):
+**Main Process** (`src/main/ipc/ipcPostConfig.ts`):
 ```typescript
 import { ipcMain, app } from 'electron';
 import { writeFile } from 'fs/promises';
@@ -412,7 +426,7 @@ export function ipcPostConfig() {
 }
 ```
 
-**`main/ipc/index.ts`에 등록**:
+**`src/main/ipc/index.ts`에 등록**:
 ```typescript
 import { ipcGetConfig } from './ipcGetConfig';
 import { ipcPostConfig } from './ipcPostConfig';
@@ -456,7 +470,7 @@ await window.electron.writeConfig({ theme: 'dark', language: 'ko' });
 
 ### 예시 3: Main Process에서 Renderer로 이벤트 전송
 
-**Main Process** (`main/ipc/ipcPostTask.ts`):
+**Main Process** (`src/main/ipc/ipcPostTask.ts`):
 ```typescript
 import { ipcMain, BrowserWindow } from 'electron';
 
@@ -476,7 +490,7 @@ export function ipcPostTask() {
 }
 ```
 
-**`main/ipc/index.ts`에 등록**:
+**`src/main/ipc/index.ts`에 등록**:
 ```typescript
 import { ipcPostTask } from './ipcPostTask';
 
@@ -530,7 +544,7 @@ await window.electron.startTask();
 
 **구조**:
 ```
-main/ipc/
+src/main/ipc/
 ├── index.ts              # 모든 핸들러 등록 (통합 파일)
 ├── ipcGetUser.ts         # 사용자 조회 핸들러
 ├── ipcPostUser.ts        # 사용자 생성 핸들러
@@ -541,7 +555,7 @@ main/ipc/
 └── ipcDeleteFile.ts      # 파일 삭제 핸들러
 ```
 
-**예시** (`main/ipc/ipcGetUser.ts`):
+**예시** (`src/main/ipc/ipcGetUser.ts`):
 ```typescript
 import { ipcMain } from 'electron';
 
@@ -554,7 +568,7 @@ export function ipcGetUser() {
 }
 ```
 
-**예시** (`main/ipc/ipcUpdateUser.ts`):
+**예시** (`src/main/ipc/ipcUpdateUser.ts`):
 ```typescript
 import { ipcMain } from 'electron';
 
@@ -567,7 +581,7 @@ export function ipcUpdateUser() {
 }
 ```
 
-**`main/ipc/index.ts`에서 통합**:
+**`src/main/ipc/index.ts`에서 통합**:
 ```typescript
 import { ipcGetUser } from './ipcGetUser';
 import { ipcPostUser } from './ipcPostUser';
@@ -654,12 +668,12 @@ contextBridge.exposeInMainWorld('electron', {
 ### 3. 타입 안전성
 
 - 모든 API에 TypeScript 타입 정의 필수
-- 타입 정의는 `renderer/types/electron.d.ts`에 중앙 관리
+- 타입 정의는 `src/renderer/types/electron.d.ts`에 중앙 관리
 
 ### 4. 개발 환경
 
 - Preload 스크립트 변경 시 개발 서버 재시작 필요
-- `out/preload/index.js`가 최신인지 확인
+- `out/src/preload/index.js`가 최신인지 확인
 
 ### 5. 디버깅
 
@@ -673,11 +687,11 @@ contextBridge.exposeInMainWorld('electron', {
 
 새로운 IPC 통신을 추가할 때 다음을 확인하세요:
 
-- [ ] `main/ipc/ipc<행위><대상>.ts` 파일 생성 (파일명 규칙 준수)
+- [ ] `src/main/ipc/ipc<행위><대상>.ts` 파일 생성 (파일명 규칙 준수)
 - [ ] `ipc<행위><대상>()` 함수 작성 (함수명은 파일명과 동일)
-- [ ] `main/ipc/index.ts`에 함수 호출 추가
-- [ ] `preload/index.ts`에 API 노출
-- [ ] `renderer/types/electron.d.ts`에 타입 정의
+- [ ] `src/main/ipc/index.ts`에 함수 호출 추가
+- [ ] `src/preload/index.ts`에 API 노출
+- [ ] `src/renderer/types/electron.d.ts`에 타입 정의
 - [ ] Renderer에서 사용 코드 작성
 - [ ] 에러 처리 구현
 - [ ] 개발 서버 재시작하여 테스트

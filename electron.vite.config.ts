@@ -9,9 +9,9 @@ export default defineConfig({
   main: {
     resolve: {
       alias: {
-        '~': resolve(__dirname, 'renderer'),
-        '@main': resolve(__dirname, 'main'),
-        '@preload': resolve(__dirname, 'preload'),
+        '~': resolve(__dirname, 'src/renderer'),
+        '@main': resolve(__dirname, 'src/main'),
+        '@preload': resolve(__dirname, 'src/preload'),
         '@config': resolve(__dirname, 'config'),
         '@': resolve(__dirname),
       },
@@ -20,7 +20,7 @@ export default defineConfig({
       externalizeDeps: true,
       rollupOptions: {
         input: {
-          index: resolve(__dirname, 'main/index.ts'),
+          index: resolve(__dirname, 'src/main/index.ts'),
         },
         // DB 관련 네이티브 모듈은 external로 설정 (필요시)
         // external: ['better-sqlite3', 'sqlite3'],
@@ -30,9 +30,9 @@ export default defineConfig({
   preload: {
     resolve: {
       alias: {
-        '~': resolve(__dirname, 'renderer'),
-        '@main': resolve(__dirname, 'main'),
-        '@preload': resolve(__dirname, 'preload'),
+        '~': resolve(__dirname, 'src/renderer'),
+        '@main': resolve(__dirname, 'src/main'),
+        '@preload': resolve(__dirname, 'src/preload'),
         '@config': resolve(__dirname, 'config'),
         '@': resolve(__dirname),
       },
@@ -41,7 +41,7 @@ export default defineConfig({
       externalizeDeps: true,
       rollupOptions: {
         input: {
-          index: resolve(__dirname, 'preload/index.ts'),
+          index: resolve(__dirname, 'src/preload/index.ts'),
         },
         // DB 관련 네이티브 모듈은 external로 설정 (필요시)
         // external: ['better-sqlite3', 'sqlite3'],
@@ -49,16 +49,16 @@ export default defineConfig({
     },
   } as UserConfig['preload'],
   renderer: {
-    root: 'renderer',
+    root: 'src/renderer',
     plugins: [ vue(), tailwindcss(), ],
     server: {
       port: 3000,
     },
     resolve: {
       alias: {
-        '~': resolve(__dirname, 'renderer'),
-        '@main': resolve(__dirname, 'main'),
-        '@preload': resolve(__dirname, 'preload'),
+        '~': resolve(__dirname, 'src/renderer'),
+        '@main': resolve(__dirname, 'src/main'),
+        '@preload': resolve(__dirname, 'src/preload'),
         '@config': resolve(__dirname, 'config'),
         '@': resolve(__dirname),
       },
@@ -66,7 +66,7 @@ export default defineConfig({
     build: {
       rollupOptions: {
         input: {
-          index: resolve(__dirname, 'renderer/index.html'),
+          index: resolve(__dirname, 'src/renderer/index.html'),
         },
       },
     },

@@ -23,13 +23,13 @@
     "baseUrl": ".",
     "paths": {
       "~/*": [
-        "renderer/*"
+        "src/renderer/*"
       ],
       "@main/*": [
-        "main/*"
+        "src/main/*"
       ],
       "@preload/*": [
-        "preload/*"
+        "src/preload/*"
       ],
       "@config/*": [
         "config/*"
@@ -40,10 +40,11 @@
     }
   },
   "include": [
-    "main/**/*",
-    "preload/**/*",
-    "renderer/**/*",
+    "src/main/**/*",
+    "src/preload/**/*",
+    "src/renderer/**/*",
     "config/**/*",
+    "types/**/*",
     "electron.vite.config.ts"
   ],
   "exclude": [

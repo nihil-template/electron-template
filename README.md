@@ -1,16 +1,18 @@
 # Electron Template
 
-Electron + Vue 3 + TypeScript를 기반으로 한 데스크톱 애플리케이션 개발 템플릿입니다.
+Electron + Vue 3 + TypeScript를 기반으로 한 데스크톱 애플리케이션 개발 템플릿입니다.  
+메인 프로세스 내 **Hono** HTTP 서버, **Controller → Service → DB(Mapper)** 3계층 구조, **로컬 SQLite / 원격 Postgres** 전환을 지원합니다.
 
 ## 📋 목차
 
-- [기술 스택](#기술-스택)
-- [주요 기능](#주요-기능)
-- [프로젝트 구조](#프로젝트-구조)
-- [시작하기](#시작하기)
-- [개발 가이드](#개발-가이드)
-- [빌드 및 배포](#빌드-및-배포)
-- [문서](#문서)
+- [기술 스택](#-기술-스택)
+- [주요 기능](#-주요-기능)
+- [프로젝트 구조](#-프로젝트-구조)
+- [설정](#-설정)
+- [시작하기](#-시작하기)
+- [개발 가이드](#-개발-가이드)
+- [빌드 및 배포](#-빌드-및-배포)
+- [문서](#-문서)
 
 ---
 
@@ -18,29 +20,29 @@ Electron + Vue 3 + TypeScript를 기반으로 한 데스크톱 애플리케이�
 
 ### 핵심 기술
 
-- **Electron** `^39.2.7` - 크로스 플랫폼 데스크톱 애플리케이션 프레임워크
-- **Vue 3** `^3.5.26` - 프론트엔드 프레임워크 (Composition API)
-- **TypeScript** `^5.9.3` - 타입 안전성을 위한 정적 타입 언어
-- **electron-vite** `^5.0.0` - 빠른 개발 및 빌드를 위한 빌드 도구
+- **Electron** - 크로스 플랫폼 데스크톱 애플리케이션
+- **Vue 3** - 프론트엔드 (Composition API)
+- **TypeScript** - 타입 안전성
+- **electron-vite** - Main / Preload / Renderer 빌드
+
+### 메인 프로세스 (서버·DB)
+
+- **Hono** - 메인 프로세스 내부 HTTP API (Controller → Service → Mapper)
+- **@hono/node-server** - Hono Node.js 어댑터
+- **Drizzle ORM** - 로컬 SQLite · 원격 Postgres 공통 스키마·쿼리
+- **better-sqlite3** - 로컬 SQLite 드라이버
+- **pg** - 원격 Postgres 드라이버
 
 ### UI 및 스타일링
 
-- **Tailwind CSS** `^4.1.18` - 유틸리티 우선 CSS 프레임워크
-- **class-variance-authority** `^0.7.1` - 컴포넌트 variant 관리
-- **tailwind-merge** `^3.4.0` - Tailwind 클래스 병합 유틸리티
+- **Tailwind CSS** - 유틸리티 우선 CSS
+- **class-variance-authority** · **tailwind-merge** - 컴포넌트 variant·클래스 병합
 
-### 상태 관리 및 유틸리티
+### 기타
 
-- **Pinia** `^3.0.4` - Vue 상태 관리 라이브러리
-- **Luxon** `^3.7.2` - 날짜/시간 처리 라이브러리
-- **Axios** `^1.13.2` - HTTP 클라이언트
-- **UUID** `^13.0.0` - 고유 식별자 생성
-
-### 개발 도구
-
-- **ESLint** `^9.39.2` - 코드 품질 및 스타일 검사
-- **TypeScript ESLint** `^8.52.0` - TypeScript 전용 린터
-- **Vue ESLint Plugin** `^10.6.2` - Vue 전용 린터 규칙
+- **Pinia** - Vue 상태 관리
+- **Axios** - 외부 API 호출 (Main Process 경유)
+- **Luxon** · **UUID** · **Zod** - 날짜·ID·스키마 검증
 
 ---
 
@@ -48,23 +50,25 @@ Electron + Vue 3 + TypeScript를 기반으로 한 데스크톱 애플리케이�
 
 ### 보안
 
-- ✅ **Context Isolation** 활성화 - 렌더러와 메인 프로세스 격리
-- ✅ **Node Integration** 비활성화 - 보안 강화
-- ✅ **Content Security Policy (CSP)** 설정 - XSS 공격 방지
+- ✅ **Context Isolation** · **Node Integration** 비활성화
 - ✅ **Preload Script**를 통한 안전한 API 노출
 
-### 개발 경험
+### 메인 프로세스
 
-- ⚡ **Hot Module Replacement (HMR)** - 빠른 개발 피드백
-- 🔧 **TypeScript** 완전 지원 - 타입 안전성 보장
-- 🎨 **Tailwind CSS** 통합 - 빠른 스타일링
-- 📝 **ESLint** 설정 - 코드 품질 유지
+- 🌐 **Hono HTTP 서버** - `config/app.json`의 `server.port`(기본 3456)에서 동작
+- 📐 **3계층 구조** - Controller(HTTP) → Service(비즈니스) → DB(Mapper, Drizzle)
+- 🗄️ **이중 DB** - 기본 로컬 SQLite, 설정 전환 시 원격 Postgres (`db.mode`, `db.remote.connectionUrl`)
+- 🔗 **CORS** - 렌더러(localhost:3000)에서 Hono API fetch 허용
 
-### IPC 통신
+### 렌더러
 
-- 🔌 **타입 안전한 IPC 통신** 구조
-- 📚 **상세한 IPC 가이드 문서** 제공
-- 🛡️ **보안 모범 사례** 적용
+- 📡 **Hono API 클라이언트** - IPC로 base URL 취득 후 `fetch` (예: `/health`)
+- 🛣️ **Vue Router** - Hash 모드, Home / Health 등
+
+### 설정
+
+- 📄 **config/app.json** - API, server, db 설정
+- 📝 **config/types.ts** - `AppConfig`, `ServerConfig`, `ApiConfig`, `DbConfig` 등 타입 정의 (메인 전역 재활용)
 
 ---
 
@@ -72,31 +76,109 @@ Electron + Vue 3 + TypeScript를 기반으로 한 데스크톱 애플리케이�
 
 ```
 electron-template/
-├── main/                    # Main Process (Node.js 환경)
-│   ├── index.ts            # 앱 진입점 및 윈도우 생성
-│   └── ipc/                # IPC 핸들러 모음
-│       ├── index.ts        # IPC 핸들러 등록 (통합 파일)
-│       └── ipcGetPing.ts   # ping IPC 핸들러 (예시)
-├── preload/                # Preload Script
-│   └── index.ts           # contextBridge를 통한 API 노출
-├── renderer/               # Renderer Process (브라우저 환경)
-│   ├── assets/            # 정적 자산
-│   │   ├── images/        # 이미지 파일
-│   │   └── styles/        # CSS 스타일 파일
-│   ├── types/             # TypeScript 타입 정의
-│   │   └── electron.d.ts  # Electron API 타입
-│   ├── utils/             # 유틸리티 함수
-│   ├── App.vue            # 루트 Vue 컴포넌트
-│   ├── index.html         # HTML 진입점
-│   └── index.ts           # Vue 앱 초기화
-├── docs/                  # 문서
-│   └── IPC_GUIDE.md      # IPC 통신 가이드
-├── out/                   # 빌드 출력 디렉토리
-├── electron.vite.config.ts # electron-vite 설정
-├── tsconfig.json          # TypeScript 설정
-├── eslint.config.mjs      # ESLint 설정
-└── package.json           # 프로젝트 메타데이터
+├── config/                     # 설정
+│   ├── app.json               # API baseURL, server(port/hostname), db(mode/local/remote)
+│   └── types.ts               # AppConfig, ServerConfig, ApiConfig, DbConfig
+├── src/
+│   ├── main/                   # Main Process
+│   │   ├── index.ts            # 앱 진입점, IPC·Hono 서버·DB context·윈도우
+│   │   ├── api/                # Hono API (axios 단일 인스턴스) - IPC 경유 호출
+│   │   │   ├── index.ts        # apiClient, IPC 등록
+│   │   │   ├── clients.ts      # apiClient (config.api.baseURL = Hono)
+│   │   │   ├── apiGetExample.ts
+│   │   │   └── apiGetHealth.ts
+│   │   ├── ipc/                # IPC 핸들러
+│   │   │   ├── index.ts        # 핸들러 등록
+│   │   │   ├── ipcGetPing.ts
+│   │   │   └── ipcGetHonoBaseUrl.ts  # Hono base URL (렌더러용)
+│   │   ├── server/             # Hono 서버 (Controller → Service → DB)
+│   │   │   ├── index.ts        # startHonoServer, closeHonoServer
+│   │   │   ├── honoApp.ts      # Hono 앱, CORS, 라우트 마운트
+│   │   │   ├── controller/     # HTTP 요청/응답
+│   │   │   │   ├── index.ts    # createControllerApp()
+│   │   │   │   ├── HomeController.ts
+│   │   │   │   ├── HealthController.ts
+│   │   │   │   └── ExampleController.ts
+│   │   │   ├── service/        # 비즈니스 로직
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── HealthService.ts
+│   │   │   │   └── ExampleService.ts
+│   │   │   ├── db/             # DB 레이어 (getDb, context, mapper)
+│   │   │   │   ├── index.ts    # getDb, getDbMode, initDbContext, closeDb
+│   │   │   │   ├── context.ts  # mode 결정, 연결 캐시, 마이그레이션
+│   │   │   │   ├── client/     # 연결 생성
+│   │   │   │   │   ├── types.ts   # DbMode, DbConfig
+│   │   │   │   │   ├── local.ts   # better-sqlite3 + Drizzle
+│   │   │   │   │   └── remote.ts # pg + Drizzle
+│   │   │   │   └── mapper/     # 데이터 접근
+│   │   │   │       ├── index.ts
+│   │   │   │       └── HealthMapper.ts
+│   │   │   └── schema/         # Drizzle 스키마 (로컬/원격 분리)
+│   │   │       ├── local/      # SQLite
+│   │   │       │   ├── index.ts
+│   │   │       │   └── example.table.ts
+│   │   │       └── remote/     # Postgres
+│   │   │           ├── index.ts
+│   │   │           └── example.table.ts
+│   │   └── window/
+│   │       ├── index.ts
+│   │       └── mainWindow.ts   # BrowserWindow, preload 경로
+│   ├── preload/
+│   │   └── index.ts            # ipc(getHonoBaseUrl 등), api 노출
+│   └── renderer/               # Renderer Process (Vue)
+│       ├── api/
+│       │   └── honoClient.ts   # getHealth(), ipc.getHonoBaseUrl() 활용
+│       ├── assets/
+│       │   ├── images/
+│       │   └── styles/
+│       ├── types/
+│       │   └── electron.d.ts   # Electron API 타입
+│       ├── utils/
+│       ├── views/
+│       │   ├── Home.vue        # Example (IPC api.getExample)
+│       │   └── Health.vue      # Hono /health
+│       ├── router/
+│       ├── App.vue
+│       ├── index.html
+│       └── index.ts
+├── drizzle/                    # 마이그레이션 SQL (generate로 생성)
+│   ├── local/                  # 로컬 스키마 마이그레이션
+│   └── remote/                 # 원격 스키마 마이그레이션
+├── drizzle.config.local.ts     # 로컬 SQLite 스키마 → drizzle/local
+├── drizzle.config.remote.ts    # 원격 Postgres 스키마 → drizzle/remote
+├── docs/
+│   └── IPC_GUIDE.md
+├── PRD/                        # PRD 문서 및 Plan & Result (선택)
+│   ├── PRD.md
+│   ├── Coding Rules & Guidelines.md
+│   ├── Development Task List.md
+│   └── plans/                 # 플랜·결과 같은 폴더 (YYYY-MM-DD/ 아래 *_PLAN.md, *_RESULT.md)
+├── out/                       # 빌드 출력
+├── electron.vite.config.ts
+├── tsconfig.json
+├── eslint.config.mjs
+└── package.json
 ```
+
+---
+
+## ⚙️ 설정
+
+### config/app.json
+
+| 키 | 설명 |
+|----|------|
+| `api.baseURL` | 외부 API base URL (axios) |
+| `api.timeout` | 타임아웃(ms) |
+| `server.port` | Hono 서버 포트 (기본 3456) |
+| `server.hostname` | Hono 바인드 주소 (기본 localhost) |
+| `db.mode` | `"local"` \| `"remote"` |
+| `db.local.path` | 로컬 SQLite 파일 경로 |
+| `db.remote.connectionUrl` | 원격 Postgres 연결 문자열 (mode=remote 시 필수) |
+
+### config/types.ts
+
+`AppConfig`, `ServerConfig`, `ApiConfig`, `DbConfig`, `DbMode` 타입을 정의하며, 메인 프로세스 전역에서 `appConfig as AppConfig` 형태로 재활용합니다.
 
 ---
 
@@ -105,126 +187,117 @@ electron-template/
 ### 필수 요구사항
 
 - **Node.js** 18.x 이상
-- **pnpm** 10.28.0 (프로젝트에서 지정된 버전)
+- **pnpm** (프로젝트 지정 버전 사용 권장)
 
 ### 설치
 
 ```bash
-# 의존성 설치
 pnpm install
 ```
 
-### 개발 모드 실행
+### 개발 모드
 
 ```bash
-# 개발 서버 시작 (HMR 지원)
 pnpm dev
 ```
 
-개발 모드에서는:
-- Main Process와 Preload Script는 자동으로 재빌드됩니다
-- Renderer Process는 Vite HMR을 통해 즉시 반영됩니다
-- DevTools가 자동으로 열립니다
+- Main · Preload는 변경 시 재빌드
+- Renderer는 Vite HMR
+- Hono 서버: `http://localhost:3456` (config 기준)
+- Renderer: `http://localhost:3000`
 
 ### 빌드
 
 ```bash
-# 프로덕션 빌드
 pnpm build
 ```
 
-빌드된 파일은 `out/` 디렉토리에 생성됩니다.
+출력: `out/` (main, preload, renderer)
 
 ### 미리보기
 
 ```bash
-# 빌드된 앱 미리보기
 pnpm preview
 ```
+
+### DB 마이그레이션 생성
+
+```bash
+# 로컬 SQLite 스키마 → drizzle/local
+pnpm db:generate
+
+# 원격 Postgres 스키마 → drizzle/remote
+pnpm db:generate:remote
+```
+
+로컬 DB는 앱 기동 후 `getDb()` 호출 시 `drizzle/local` 마이그레이션이 자동 적용됩니다.
 
 ---
 
 ## 📖 개발 가이드
 
-### IPC 통신 추가하기
+### IPC 추가
 
-새로운 IPC 통신을 추가하려면 다음 4단계를 따르세요:
-
-1. **Main Process에 핸들러 추가** (`main/ipc/ipc<행위><대상>.ts`)
-   - 파일명 규칙: `ipc<행위><대상>` (예: `ipcGetUser`, `ipcPostData`, `ipcDeleteFile`, `ipcUpdateConfig`)
-   - 함수명 규칙: `ipc<행위><대상>()` (예: `ipcGetUser()`, `ipcPostData()`) - 파일명과 동일
-2. **IPC 핸들러 등록** (`main/ipc/index.ts`에 함수 호출 추가)
-3. **Preload Script에 API 노출** (`preload/index.ts`)
-4. **TypeScript 타입 정의** (`renderer/types/electron.d.ts`)
-5. **Renderer에서 사용** (Vue 컴포넌트)
+1. **Main** - `main/ipc/ipc<행위><대상>.ts`에 핸들러 구현
+2. **등록** - `main/ipc/index.ts`에서 해당 함수 호출
+3. **Preload** - `preload/index.ts`에서 `invoke` 노출
+4. **타입** - `renderer/types/electron.d.ts`에 시그니처 추가
+5. **Renderer** - `window.electron.*` 로 사용
 
 자세한 내용은 [IPC 통신 가이드](./docs/IPC_GUIDE.md)를 참고하세요.
 
+### Hono API 추가 (Controller → Service → Mapper)
+
+1. **스키마** - `main/server/schema/local` 또는 `remote`에 테이블 정의 (필요 시)
+2. **Mapper** - `main/server/db/mapper/` 에 조회·저장 함수 (getDb() 사용)
+3. **Service** - `main/server/service/` 에 비즈니스 로직, Mapper 호출
+4. **Controller** - `main/server/controller/` 에 Hono 라우트, Service 호출
+5. **라우트 등록** - `main/server/controller/index.ts` 에 `app.route(...)` 추가
+
+### 렌더러에서 Hono API 호출
+
+- `window.electron.ipc.getHonoBaseUrl()` 으로 base URL 취득
+- `renderer/api/honoClient.ts` 에 `getHealth()` 등 추가 후 `fetch(baseUrl + '/경로')` 사용
+
 ### 스타일링
 
-이 프로젝트는 Tailwind CSS를 사용합니다. 커스텀 스타일은 `renderer/assets/styles/` 디렉토리에 추가할 수 있습니다.
+Tailwind CSS 사용. 커스텀 스타일은 `renderer/assets/styles/` 에 추가.
 
-**경로 별칭 (Aliases)**:
+**경로 별칭**
+
 - `~/*` → `renderer/*`
 - `@main/*` → `main/*`
 - `@preload/*` → `preload/*`
+- `@config/*` → `config/*`
 - `@/*` → 프로젝트 루트
 
 ### 상태 관리
 
-Pinia를 사용하여 전역 상태를 관리할 수 있습니다. Store는 `renderer/stores/` 디렉토리에 생성하세요.
+Pinia 사용. Store는 `renderer/stores/` 에 생성합니다.
 
 ---
 
 ## 🏗 빌드 및 배포
 
-### 빌드 설정
+빌드 설정은 `electron.vite.config.ts`에서 Main / Preload / Renderer 별로 관리합니다.
 
-빌드 설정은 `electron.vite.config.ts`에서 관리됩니다. Main, Preload, Renderer 프로세스별로 개별 설정이 가능합니다.
-
-### 배포
-
-Electron 앱을 배포하려면 추가 패키징 도구가 필요합니다:
-- [electron-builder](https://www.electron.build/)
-- [electron-forge](https://www.electronforge.io/)
+배포 시 [electron-builder](https://www.electron.build/) 또는 [electron-forge](https://www.electronforge.io/) 등 패키징 도구를 사용하세요.
 
 ---
 
 ## 📚 문서
 
-- [IPC 통신 가이드](./docs/IPC_GUIDE.md) - IPC 통신 추가 및 사용 방법
-
----
-
-## 🔧 설정 파일
-
-### TypeScript
-
-- `tsconfig.json` - TypeScript 컴파일러 설정
-- DOM 라이브러리 포함으로 `window` 객체 타입 지원
-
-### ESLint
-
-- `eslint.config.mjs` - ESLint 규칙 및 플러그인 설정
-- Vue, TypeScript, 접근성 규칙 포함
-
-### Electron Vite
-
-- `electron.vite.config.ts` - Main, Preload, Renderer 빌드 설정
-- 경로 별칭 및 플러그인 설정
+- [IPC 통신 가이드](./docs/IPC_GUIDE.md) - IPC 추가 및 사용 방법
 
 ---
 
 ## 🛡️ 보안
 
-이 템플릿은 Electron 보안 모범 사례를 따릅니다:
+- **Context Isolation** 활성화
+- **Node Integration** 비활성화
+- **Preload** - contextBridge로 필요한 API만 노출
 
-- **Context Isolation**: 활성화
-- **Node Integration**: 비활성화
-- **Content Security Policy**: 설정됨
-- **Preload Script**: contextBridge를 통한 안전한 API 노출
-
-자세한 내용은 [Electron 보안 가이드](https://www.electronjs.org/docs/latest/tutorial/security)를 참고하세요.
+[Electron 보안 가이드](https://www.electronjs.org/docs/latest/tutorial/security)를 참고하세요.
 
 ---
 
@@ -234,12 +307,6 @@ ISC
 
 ---
 
-## 🤝 기여
-
-이슈 및 풀 리퀘스트를 환영합니다!
-
----
-
 **프로젝트 이름**: keyword-manager  
 **버전**: 1.0.0  
-**패키지 매니저**: pnpm@10.28.0
+**패키지 매니저**: pnpm@10.28.2
